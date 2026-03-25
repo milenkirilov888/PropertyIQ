@@ -9,7 +9,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://prophetic-ai.onrender.com/api/$1"
+      "destination": "https://property-iq-seven.vercel.app/api/$1"
     },
     {
       "source": "/(.*)",
