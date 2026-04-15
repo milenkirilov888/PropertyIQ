@@ -40,7 +40,7 @@ const RiskAlerts = () => {
   useEffect(() => {
     const fetchCSVData = async () => {
       try {
-        const base_url = import.meta.env.VITE_BACKEND_URL || '';
+        const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
         const response = await fetch(`${base_url.replace(/\/$/, '')}/api/risk-data-csv`);
         const csvText  = await response.text();
 
@@ -351,7 +351,7 @@ const RiskAlerts = () => {
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                   <p className="text-[9px] font-black uppercase text-indigo-500 tracking-widest mb-2">Heuristic Attribution</p>
                   <p className="text-[12px] text-slate-600 font-medium leading-relaxed">
-                    Asset flagged due to {selectedProperty.summary} Potential exposure identified, mitigation recommended.
+                    Asset flagged due to {selectedProperty.summary} Potential exposure identified — mitigation recommended.
                   </p>
                 </div>
 
