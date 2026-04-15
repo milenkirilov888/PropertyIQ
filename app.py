@@ -1,17 +1,63 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from fastapi import Response
+from typing import Optional
 import os
 import re
+import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, Response, request
-from flask_cors import CORS
+import shap
+import warnings
 
-app = Flask(__name__)
+warnings.filterwarnings('ignore')
 
+# Import your ML components
+from model2_explainer import predict_and_explain, feature_cols, model
 
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+app = FastAPI(
+    title="UK Property Audit + ML Prediction API",
+    description="Serves property data from CSV + ML Price Prediction with SHAP explanations",
+    version="2.0.0"
+)
 
+# Cors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Paths
 base_path = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_path, 'table.csv')
+csv_path  = os.path.join(base_path, 'table.csv')
 
+# Models
+
+class PropertyInput(BaseModel):
+    bedrooms:                Optional[float] = 2
+    bathrooms:               Optional[float] = 1
+    receptions:              Optional[float] = 1
+    property_size:           Optional[float] = 800
+    time_remaining_on_lease: Optional[float] = 150
+    price_per_sqft:          Optional[float] = 1000
+    service_charge:          Optional[float] = 3000
+    postcode_area:           Optional[str]   = ""
+    property_type_clean:     Optional[str]   = ""
+    # kept for backwards compat / other endpoints
+    deposit:                 Optional[float] = 500
+    ecp_rating:              Optional[str]   = "C"
+    council_tax_band:        Optional[str]   = "D"
+    property_type:           Optional[str]   = "for-sale"
+    tenure:                  Optional[str]   = "Leasehold"
+    area:                    Optional[str]   = "London"
+    is_london:               Optional[int]   = 1
+    avg_estimated_value:     Optional[float] = 500000
+
+
+# Data Cleaning Helpers
 
 def clean_value(val):
     if pd.isna(val) or str(val).lower() == "nan" or str(val).strip() == "":
@@ -20,6 +66,7 @@ def clean_value(val):
     s = s.replace('Â£', '£').replace('Â', '')
     s = re.sub(r'^["\'\[]+|["\'\]]+$', '', s)
     return s
+
 
 def extract_number(val):
     if pd.isna(val) or str(val).strip() == "" or str(val).lower() == "n/a":
@@ -30,118 +77,215 @@ def extract_number(val):
     except ValueError:
         return 0
 
+
 def format_uprn_to_string(val):
     try:
         if pd.isna(val) or str(val).lower() == 'nan' or str(val).strip() == '':
             return "N/A"
-        float_val = float(val)
-        return str(int(float_val))
+        return str(int(float(val)))
     except (ValueError, TypeError):
         return str(val).strip()
+
 
 def extract_images(raw_data):
     if pd.isna(raw_data) or str(raw_data).strip() == "":
         return []
-    links = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-f_A-F][0-9a-f_A-F]))+', str(raw_data))
-    return links
+    return re.findall(
+        r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-f_A-F][0-9a-f_A-F]))+',
+        str(raw_data)
+    )
 
 
+# Routes
 
-@app.route('/')
-def home():
-    return jsonify({
-        "status": "Audit Intelligence Active",
-        "database_connected": os.path.exists(csv_path)
-    })
-
-
-@app.route('/api/risk-data-csv', methods=['GET'])
-def get_risk_data_csv():
-    try:
-        if not os.path.exists(csv_path):
-            return Response("uprn,title,price,ecp_rating,tenure\n", mimetype='text/csv')
-        
-        df = pd.read_csv(csv_path)
-        risk_data = []
-        for _, row in df.iterrows():
-            risk_data.append({
-                "uprn": format_uprn_to_string(row.get('uprn')),
-                "title": clean_value(row.get('property_title')),
-                "price": extract_number(row.get('price')),
-                "ecp_rating": clean_value(row.get('ecp_rating')),
-                "tenure": clean_value(row.get('tenure'))
-            })
-        
-        return Response(pd.DataFrame(risk_data).to_csv(index=False), mimetype='text/csv')
-    except Exception as e:
-        return Response(f"error\n{str(e)}", mimetype='text/csv')
+@app.get("/")
+def root():
+    return {
+        "message": "UK Property Audit + ML API is running",
+        "csv_loaded": os.path.exists(csv_path),
+        "ml_model": "XGBoost + SHAP Ready"
+    }
 
 
-@app.route('/api/properties', methods=['GET'])
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/api/properties")
 def get_properties():
     try:
         if not os.path.exists(csv_path):
-            return jsonify({"error": "CSV not found"}), 404
+            raise HTTPException(status_code=404, detail="table.csv not found")
 
         df = pd.read_csv(csv_path)
         properties = []
+
         for index, row in df.iterrows():
             uprn_str = format_uprn_to_string(row.get('uprn'))
             p_id = uprn_str if uprn_str != "N/A" else f"prop-{index}"
-            
+
             properties.append({
-                "id": p_id, 
-                "uprn": uprn_str,
+                "id":             p_id,
+                "uprn":           uprn_str,
                 "property_title": clean_value(row.get('property_title')),
-                "property_type": clean_value(row.get('property_type')),
-                "address": clean_value(row.get('address')),
-                "price": clean_value(row.get('price')),
-                "price_num": extract_number(row.get('price')), 
-                "yield": clean_value(row.get('market_stats_renta_opportunities')),
-                "yield_num": extract_number(row.get('market_stats_renta_opportunities')),
+                "property_type":  clean_value(row.get('property_type')),
+                "address":        clean_value(row.get('address')),
+                "price":          clean_value(row.get('price')),
+                "price_num":      extract_number(row.get('price')),
+                "yield":          clean_value(row.get('market_stats_renta_opportunities')),
+                "yield_num":      extract_number(row.get('market_stats_renta_opportunities')),
                 "property_images": extract_images(row.get('property_images')),
-                "ecp_rating": clean_value(row.get('ecp_rating')),
-                "tenure": clean_value(row.get('tenure')),
-                "bedrooms": clean_value(row.get('bedrooms'))
+                "ecp_rating":     clean_value(row.get('ecp_rating')),
+                "tenure":         clean_value(row.get('tenure')),
+                "bedrooms":       clean_value(row.get('bedrooms')),
+                "bathrooms":      clean_value(row.get('bathrooms')),
+                "receptions":     clean_value(row.get('receptions')),
+                "property_size":  clean_value(row.get('property_size')),
+                "service_charge": clean_value(row.get('service_charge')),
+                "time_remaining_on_lease": clean_value(row.get('time_remaining_on_lease')),
+                "council_tax_band": clean_value(row.get('council_tax_band')),
+                "description":    clean_value(row.get('description')),
+                "availability":   clean_value(row.get('availability')),
             })
-        return jsonify(properties)
+
+        return properties
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.route('/api/predict', methods=['POST'])
-def predict_insight():
+@app.get("/api/risk-data-csv")
+def get_risk_data_csv():
     try:
-        data = request.json
-        
-        incoming_id = str(data.get('uprn', '')).strip()
-        user_query = data.get('query', '').lower()
-
         if not os.path.exists(csv_path):
-            return jsonify({"prediction_text": "Error: Database missing."}), 404
+            return Response("uprn,title,price,ecp_rating,tenure\n", media_type="text/csv")
 
         df = pd.read_csv(csv_path)
-        
-        
+        risk_data = []
+
+        for _, row in df.iterrows():
+            risk_data.append({
+                "uprn":      format_uprn_to_string(row.get('uprn')),
+                "title":     clean_value(row.get('property_title')),
+                "price":     extract_number(row.get('price')),
+                "ecp_rating": clean_value(row.get('ecp_rating')),
+                "tenure":    clean_value(row.get('tenure'))
+            })
+
+        return Response(
+            pd.DataFrame(risk_data).to_csv(index=False),
+            media_type="text/csv"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict")
+def predict(data: PropertyInput):
+    input_dict = data.dict()
+    features = {
+        "bedrooms":                input_dict["bedrooms"],
+        "bathrooms":               input_dict["bathrooms"],
+        "receptions":              input_dict["receptions"],
+        "property_size":           input_dict["property_size"],
+        "time_remaining_on_lease": input_dict["time_remaining_on_lease"],
+        "service_charge":          input_dict["service_charge"],
+        "price_per_sqft":          input_dict["price_per_sqft"],
+        "postcode_area":           input_dict.get("postcode_area", ""),
+        "property_type_clean":     input_dict.get("property_type_clean", ""),
+    }
+    result = predict_and_explain(features)
+    return {
+        "predicted_price": result["predicted_price"],
+        "currency": "GBP"
+    }
+
+
+@app.post("/explain")
+def explain(input: PropertyInput):
+    print(f"📊 Received explain request: {input.dict()}")
+    input_dict = input.dict()
+
+    # ── Step 1: Build base DataFrame with all required fields ──
+    input_df = pd.DataFrame([{
+        "bedrooms":                input_dict["bedrooms"],
+        "bathrooms":               input_dict["bathrooms"],
+        "receptions":              input_dict["receptions"],
+        "property_size":           input_dict["property_size"],
+        "time_remaining_on_lease": input_dict["time_remaining_on_lease"],
+        "service_charge":          input_dict["service_charge"],
+        "price_per_sqft":          input_dict["price_per_sqft"],
+        "postcode_area":           input_dict.get("postcode_area", ""),
+        "property_type_clean":     input_dict.get("property_type_clean", ""),
+    }])
+
+    # ── Step 2: One-hot encode (NO drop_first) ──
+    input_df = pd.get_dummies(
+        input_df,
+        columns=["postcode_area", "property_type_clean"],
+        drop_first=False
+    )
+    
+    print(f"🔍 Columns after one-hot: {input_df.columns.tolist()}")
+
+    # ── Step 3: Align columns — add missing dummies as 0, drop extras ──
+    for col in feature_cols:
+        if col not in input_df.columns:
+            input_df[col] = 0
+    input_df = input_df[feature_cols]
+    
+    # Debug active location
+    for col in feature_cols:
+        if col.startswith('postcode_area_') and input_df[col].iloc[0] == 1:
+            print(f"✅ Active location: {col}")
+
+    # ── Step 4: Predict ──
+    pred_log  = model.predict(input_df)[0]
+    predicted = float(np.expm1(pred_log))
+    
+    print(f"💰 Predicted price: £{predicted:,.0f}")
+
+    # ── Step 5: SHAP explanations ──
+    explainer   = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(input_df)
+    base_price  = float(np.expm1(explainer.expected_value))
+
+    shap_breakdown = {
+        col: float(np.expm1(abs(float(sv))) * np.sign(float(sv)))
+        for col, sv in zip(feature_cols, shap_values[0])
+    }
+
+    return {
+        "predicted_price": predicted,
+        "base_price":       base_price,
+        "shap_breakdown":   shap_breakdown,
+        "explanation":      f"The model predicts £{predicted:,.0f} for this property based on {len([v for v in shap_breakdown.values() if v != 0])} active features."
+    }
+@app.get("/api/property/{uprn}")
+def get_property(uprn: str):
+    try:
+        if not os.path.exists(csv_path):
+            raise HTTPException(status_code=404, detail="CSV not found")
+
+        df = pd.read_csv(csv_path)
         df['temp_uprn'] = df['uprn'].apply(format_uprn_to_string)
-        match = df[df['temp_uprn'] == incoming_id]
+        match = df[df['temp_uprn'] == uprn.strip()]
 
         if match.empty:
-            return jsonify({
-                "status": "not_found",
-                "prediction_text": f"Asset ID {incoming_id} not found in intelligence record. Check if UPRN is provided in CSV."
-            }), 200
+            raise HTTPException(status_code=404, detail=f"Property {uprn} not found")
 
         row = match.iloc[0]
-        address = clean_value(row.get('address'))
-        price = clean_value(row.get('price'))
-        
-        response = f"AI Forensic Analysis for {address}: Currently valued at {price}. Our engine predicts stable yield metrics for your query: '{user_query}'."
+        return {
+            "uprn":           format_uprn_to_string(row.get('uprn')),
+            "property_title": clean_value(row.get('property_title')),
+            "address":        clean_value(row.get('address')),
+            "price":          clean_value(row.get('price')),
+            "price_num":      extract_number(row.get('price')),
+            "ecp_rating":     clean_value(row.get('ecp_rating')),
+            "tenure":         clean_value(row.get('tenure')),
+        }
 
-        return jsonify({"status": "success", "prediction_text": response})
     except Exception as e:
-        return jsonify({"prediction_text": f"Engine Error: {str(e)}"}), 500
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='127.0.0.1', port=port, debug=True)
+        raise HTTPException(status_code=500, detail=str(e))

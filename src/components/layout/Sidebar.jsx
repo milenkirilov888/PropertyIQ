@@ -85,7 +85,6 @@ const Sidebar = () => {
   const menuItems = [
     { icon: <LayoutDashboard size={18} strokeWidth={2}/>, label: "Dashboard", path: "/" },
     { icon: <Search size={18} strokeWidth={2}/>, label: "Market Explorer", path: "/listings" },
-    { icon: <BarChart3 size={18} strokeWidth={2}/>, label: "Market Analysis", path: "/analysis" },
     { icon: <AlertCircle size={18} strokeWidth={2}/>, label: "Risk Early Warning", path: "/risks" },
     { icon: <Cpu size={18} strokeWidth={2}/>, label: "System Documentation", path: "/explain" }, 
   ];
