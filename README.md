@@ -1,4 +1,4 @@
-# 🏛️ PropertyIQ: Asset Intelligence & Audit System
+# 🏛️ PropertyIQ: Explainable Decision-Support System (DSS) For UK Residential Property Investment
 
 PropertyIQ is an advanced **Explainable Decision-Support System** designed to evaluate residential property investments across the UK. Unlike "black-box" investment tools, PropertyIQ prioritizes transparency by breaking down socio-economic factors and industry dependencies.
 
