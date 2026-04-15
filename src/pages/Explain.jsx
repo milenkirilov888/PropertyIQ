@@ -100,24 +100,25 @@ const Explain = () => {
           <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50/50 transition-colors">
             <div className="flex items-center gap-4">
               <CheckCircle2 size={16} className="text-emerald-500" />
-              <div><h4 className="text-[13px] font-medium text-slate-800">Interface & UI Framework</h4><p className="text-[11px] text-slate-400">Completed</p></div>
+              <div><h4 className="text-[13px] font-medium text-slate-800">User Interface Framework</h4><p className="text-[11px] text-slate-400">Completed</p></div>
             </div>
             <span className="text-[11px] font-mono text-slate-400">March 2026</span>
           </div>
           <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50/50 transition-colors">
             <div className="flex items-center gap-4">
               <CheckCircle2 size={16} className="text-emerald-500" />
-              <div><h4 className="text-[13px] font-medium text-slate-800">Explainable ML Logic</h4><p className="text-[11px] text-slate-400">Completed</p></div>
+              <div><h4 className="text-[13px] font-medium text-slate-800">Explainable ML XGBoost and SHAP model</h4><p className="text-[11px] text-slate-400">Completed</p></div>
             </div>
             <span className="text-[11px] font-mono text-slate-400">April 2026</span>
           </div>
-          <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50/50 transition-colors">
             <div className="flex items-center gap-4">
-              <Timer size={16} className="text-slate-300" />
-              <div><h4 className="text-[13px] font-medium text-slate-800">Final Backend & ONS Data</h4><p className="text-[11px] text-slate-400">Planned</p></div>
+              <CheckCircle2 size={16} className="text-emerald-500" />
+              <div><h4 className="text-[13px] font-medium text-slate-800">ML Model Backend Integration</h4><p className="text-[11px] text-slate-400">Completed</p></div>
             </div>
             <span className="text-[11px] font-mono text-slate-400">April 2026</span>
           </div>
+
         </div>
       </section>
 

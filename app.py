@@ -7,13 +7,13 @@ import os
 import re
 import numpy as np
 import pandas as pd
-import shap
 import warnings
 
 warnings.filterwarnings('ignore')
 
-# Import your ML components
-from model2_explainer import predict_and_explain, feature_cols, model
+# Import ML components (uses pure Python inference, no xgboost package needed)
+from model2_explainer import predict_and_explain
+from xgb_inference import feature_cols, predict_with_contribs
 
 app = FastAPI(
     title="UK Property Audit + ML Prediction API",
@@ -183,7 +183,7 @@ def get_risk_data_csv():
 
 
 @app.post("/predict")
-def predict(data: PropertyInput):
+def predict_endpoint(data: PropertyInput):
     input_dict = data.dict()
     features = {
         "bedrooms":                input_dict["bedrooms"],
@@ -205,7 +205,6 @@ def predict(data: PropertyInput):
 
 @app.post("/explain")
 def explain(input: PropertyInput):
-    print(f"📊 Received explain request: {input.dict()}")
     input_dict = input.dict()
 
     # ── Step 1: Build base DataFrame with all required fields ──
@@ -227,34 +226,23 @@ def explain(input: PropertyInput):
         columns=["postcode_area", "property_type_clean"],
         drop_first=False
     )
-    
-    print(f"🔍 Columns after one-hot: {input_df.columns.tolist()}")
 
     # ── Step 3: Align columns — add missing dummies as 0, drop extras ──
     for col in feature_cols:
         if col not in input_df.columns:
             input_df[col] = 0
     input_df = input_df[feature_cols]
-    
-    # Debug active location
-    for col in feature_cols:
-        if col.startswith('postcode_area_') and input_df[col].iloc[0] == 1:
-            print(f"✅ Active location: {col}")
 
-    # ── Step 4: Predict ──
-    pred_log  = model.predict(input_df)[0]
+    # ── Step 4: Predict with SHAP contributions ──
+    preds, contribs, base_value = predict_with_contribs(input_df.values)
+    pred_log  = float(preds[0])
     predicted = float(np.expm1(pred_log))
-    
-    print(f"💰 Predicted price: £{predicted:,.0f}")
+    base_price = float(np.expm1(base_value))
 
-    # ── Step 5: SHAP explanations ──
-    explainer   = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_df)
-    base_price  = float(np.expm1(explainer.expected_value))
-
+    shap_vals = contribs[0]
     shap_breakdown = {
         col: float(np.expm1(abs(float(sv))) * np.sign(float(sv)))
-        for col, sv in zip(feature_cols, shap_values[0])
+        for col, sv in zip(feature_cols, shap_vals)
     }
 
     return {
@@ -263,6 +251,8 @@ def explain(input: PropertyInput):
         "shap_breakdown":   shap_breakdown,
         "explanation":      f"The model predicts £{predicted:,.0f} for this property based on {len([v for v in shap_breakdown.values() if v != 0])} active features."
     }
+
+
 @app.get("/api/property/{uprn}")
 def get_property(uprn: str):
     try:

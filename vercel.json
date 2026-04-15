@@ -1,15 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{node_modules/**,dist/**,.venv/**,.git/**,.idea/**,.vercel/**,src/**,__pycache__/**,*.ipynb,*.pkl,package-lock.json}"
     }
-  ],
+  },
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/predict", "destination": "/api" },
+    { "source": "/explain", "destination": "/api" },
+    { "source": "/health", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

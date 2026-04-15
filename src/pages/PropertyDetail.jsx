@@ -55,8 +55,8 @@ const generateHumanExplanation = (predictedPrice, propertyData) => {
   
   const isGoodDeal = priceDiff > askingPrice * threshold && ['A', 'B', 'C'].includes(epc);
   const recommendation = isGoodDeal
-    ? `✅ RECOMMENDATION: Property appears undervalued. Consider accelerated acquisition.`
-    : `📊 RECOMMENDATION: Proceed with standard due diligence. Price aligns with model expectations.`;
+    ? `✅ Property appears undervalued. Consider accelerated acquisition.`
+    : `📊 Proceed with standard due diligence. Price aligns with model expectations.`;
   
   return { summary: priceAssessment, energyInsight: epcAssessment, tenureInsight: tenureAssessment, recommendation };
 };
@@ -78,7 +78,7 @@ const PropertyDetail = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+        const base_url = import.meta.env.VITE_BACKEND_URL || '';
         const response = await fetch(`${base_url.replace(/\/$/, '')}/api/properties`);
         if (!response.ok) throw new Error();
         const data = await response.json();

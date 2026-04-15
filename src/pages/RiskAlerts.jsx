@@ -40,7 +40,7 @@ const RiskAlerts = () => {
   useEffect(() => {
     const fetchCSVData = async () => {
       try {
-        const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+        const base_url = import.meta.env.VITE_BACKEND_URL || '';
         const response = await fetch(`${base_url.replace(/\/$/, '')}/api/risk-data-csv`);
         const csvText  = await response.text();
 

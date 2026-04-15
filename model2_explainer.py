@@ -1,18 +1,12 @@
+import os
 import pandas as pd
 import numpy as np
-import shap
-import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
-# Load the saved model and columns used for training the model from the jupyter notebook
-with open('model1_price_predictor.pkl', 'rb') as f:
-    model = pickle.load(f)
-with open('feature_cols.pkl', 'rb') as f:
-    feature_cols = pickle.load(f)
+# Use the pure Python XGBoost engine (no xgboost/scipy/CUDA packages needed)
+from xgb_inference import feature_cols, predict, predict_with_contribs
 
-# Creates the SHAP model to explain the text. And to the SHAP model with add our XGBoost model
-explainer = shap.TreeExplainer(model)
 
 def predict_and_explain(properties: dict):
 
@@ -26,39 +20,31 @@ def predict_and_explain(properties: dict):
         for col in postcode_cols:
             area = col.replace('postcode_area_', '')
             df[col] = (df['postcode_area'] == area).astype(int)
-        
+
         if 'postcode_area' in df.columns:
             df = df.drop(columns=['postcode_area'])
-        
+
         # Clean the property type just like we did in the first model
         type_cols = [col for col in feature_cols if col.startswith('property_type_clean_')]
         for col in type_cols:
             prop_type = col.replace('property_type_clean_', '')
             df[col] = (df['property_type_clean'] == prop_type).astype(int)
-        
+
         if 'property_type_clean' in df.columns:
             df = df.drop(columns=['property_type_clean'])
-        
+
         # Align columns
         for col in feature_cols:
             if col not in df.columns:
                 df[col] = 0
         df = df[feature_cols]
 
-        # Predict the property value from the attributes
-        pred_log = model.predict(df)[0]
+        # Predict and get SHAP contributions
+        preds, contribs, base_value = predict_with_contribs(df.values)
+        pred_log = float(preds[0])
         predicted_price = float(np.expm1(pred_log))
 
-        # Run the SHAP model to generate the explaining text
-        shap_values = explainer.shap_values(df.values)
-        if len(shap_values.shape) == 2:
-            shap_values = shap_values[0]
-
-        base_value = float(explainer.expected_value)
-        if isinstance(base_value, np.ndarray):
-            base_value = float(base_value)
-
-        shap_breakdown = dict(zip(feature_cols, shap_values))
+        shap_breakdown = dict(zip(feature_cols, contribs[0]))
 
         explanation = f"The model predicts £{predicted_price:,.0f} for this property."
 
