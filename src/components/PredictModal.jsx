@@ -181,7 +181,7 @@ const PredictModal = ({ isOpen, onClose, propertyData, simpleMode = false }) => 
   const handlePredict = async () => {
     setStep(2);
     try {
-      const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+      const base_url = import.meta.env.VITE_BACKEND_URL || '';
       const payload = buildPayload(form, propertyData);
       const response = await fetch(`${base_url.replace(/\/$/, '')}/explain`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -207,7 +207,7 @@ const PredictModal = ({ isOpen, onClose, propertyData, simpleMode = false }) => 
     }
     setStep(2);
     try {
-      const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+      const base_url = import.meta.env.VITE_BACKEND_URL || '';
       const payload = buildPayload(form, propertyData);
       const response = await fetch(`${base_url.replace(/\/$/, '')}/explain`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),

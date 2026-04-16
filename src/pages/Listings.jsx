@@ -72,7 +72,7 @@ const Listings = () => {
       setLoading(true);
       setError(false);
       try {
-        const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+        const base_url = import.meta.env.VITE_BACKEND_URL || '';
         const res = await fetch(`${base_url.replace(/\/$/, '')}/api/properties`);
         if (!res.ok) throw new Error();
         const data = await res.json();

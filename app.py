@@ -6,6 +6,8 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from fastapi import Response
 from typing import Optional
@@ -17,6 +19,9 @@ import shap
 import warnings
 
 warnings.filterwarnings('ignore')
+
+# ====================== PORT CONFIG ======================
+port = int(os.getenv("PORT", 8000))
 
 # Import your ML components
 from model2_explainer import predict_and_explain, feature_cols, model
@@ -103,15 +108,6 @@ def extract_images(raw_data):
 
 
 # ====================== ROUTES ======================
-
-@app.get("/")
-def root():
-    return {
-        "message": "UK Property Audit + ML API is running",
-        "csv_loaded": os.path.exists(csv_path),
-        "ml_model": "XGBoost + SHAP Ready"
-    }
-
 
 @app.get("/health")
 def health():
@@ -295,3 +291,21 @@ def get_property(uprn: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ====================== FRONTEND SERVING ======================
+@app.get("/")
+async def serve_index():
+    dist_path = os.path.join(os.path.dirname(__file__), 'dist')
+    index_path = os.path.join(dist_path, 'index.html')
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "UK Property Audit + ML API is running", "csv_loaded": True, "ml_model": "XGBoost + SHAP Ready"}
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    dist_path = os.path.join(os.path.dirname(__file__), 'dist')
+    index_path = os.path.join(dist_path, 'index.html')
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend not built"}

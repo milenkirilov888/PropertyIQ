@@ -78,7 +78,7 @@ const PropertyDetail = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const base_url = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+        const base_url = import.meta.env.VITE_BACKEND_URL || '';
         const response = await fetch(`${base_url.replace(/\/$/, '')}/api/properties`);
         if (!response.ok) throw new Error();
         const data = await response.json();
