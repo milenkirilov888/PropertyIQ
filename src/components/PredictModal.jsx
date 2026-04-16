@@ -99,9 +99,9 @@ const generateHumanExplanation = (predictedPrice, propertyData) => {
   
   const isGoodDeal = priceDiff > askingPrice * threshold && ['A', 'B', 'C'].includes(epc);
   const recommendation = isGoodDeal
-    ? `✅ RECOMMENDATION: Property appears undervalued relative to model. Consider accelerated acquisition.`
-    : `📊 RECOMMENDATION: Proceed with standard due diligence. Price aligns with model expectations.`;
-  
+    ? `Property appears undervalued relative to model. Consider accelerated acquisition.`
+    : `Proceed with standard due diligence. Price aligns with model expectations.`;
+
   return { summary: priceAssessment, energyInsight: epcAssessment, tenureInsight: tenureAssessment, recommendation, predictedPrice, askingPrice };
 };
 

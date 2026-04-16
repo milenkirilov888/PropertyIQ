@@ -155,7 +155,7 @@ const Listings = () => {
 
         {/* Stats Bar */}
         {!loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard
               icon={<ListFilter size={18} />}
               iconBg="bg-slate-100 text-slate-500"
@@ -176,25 +176,6 @@ const Listings = () => {
               value={error ? 'Offline' : 'Nominal'}
               valueColor={error ? 'text-red-500' : 'text-indigo-600'}
             />
-            {/* AI Predictor CTA */}
-            <button
-              onClick={() => { setSelectedProperty(null); setIsModalOpen(true); }}
-              className="group relative bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-5 flex items-center justify-between overflow-hidden cursor-pointer hover:shadow-lg hover:shadow-indigo-200 transition-all duration-300"
-            >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-xl">
-                  <Sparkles size={18} className="text-white" strokeWidth={1.5} />
-                </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">AI Engine</p>
-                  <p className="text-sm font-bold text-white">Predict Price</p>
-                </div>
-              </div>
-              <div className="relative p-2 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
-                <ArrowRight size={16} className="text-white group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </button>
           </div>
         )}
 
