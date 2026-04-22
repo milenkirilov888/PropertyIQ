@@ -1,9 +1,3 @@
-# ============================================================
-# UK PROPERTY AUDIT + ML PREDICTION API (FastAPI)
-# Complete Code - Ready to Run
-# Run: uvicorn app:app --reload --port 8000
-# ============================================================
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -20,10 +14,9 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# ====================== PORT CONFIG ======================
 port = int(os.getenv("PORT", 8000))
 
-# Import your ML components
+# Import ML components
 from model2_explainer import predict_and_explain, feature_cols, model
 
 app = FastAPI(
@@ -32,7 +25,6 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# ====================== CORS ======================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,22 +33,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ====================== PATHS ======================
 base_path = os.path.dirname(os.path.abspath(__file__))
 csv_path  = os.path.join(base_path, 'table.csv')
-
-# ====================== REQUEST MODELS ======================
 
 class PropertyInput(BaseModel):
     bedrooms:                Optional[float] = 2
     bathrooms:               Optional[float] = 1
     receptions:              Optional[float] = 1
     property_size:           Optional[float] = 800
-    time_remaining_on_lease: Optional[float] = 150     # ← was missing before
-    price_per_sqft:          Optional[float] = 1000    # ← renamed from price_per_size
+    time_remaining_on_lease: Optional[float] = 150
+    price_per_sqft:          Optional[float] = 1000
     service_charge:          Optional[float] = 3000
-    postcode_area:           Optional[str]   = ""      # ← new
-    property_type_clean:     Optional[str]   = ""      # ← new
+    postcode_area:           Optional[str]   = ""
+    property_type_clean:     Optional[str]   = ""
     # kept for backwards compat / other endpoints
     deposit:                 Optional[float] = 500
     ecp_rating:              Optional[str]   = "C"
@@ -67,9 +56,6 @@ class PropertyInput(BaseModel):
     is_london:               Optional[int]   = 1
     avg_estimated_value:     Optional[float] = 500000
 
-
-# ====================== DATA CLEANING HELPERS ======================
-
 def clean_value(val):
     if pd.isna(val) or str(val).lower() == "nan" or str(val).strip() == "":
         return "N/A"
@@ -77,7 +63,6 @@ def clean_value(val):
     s = s.replace('Â£', '£').replace('Â', '')
     s = re.sub(r'^["\'\[]+|["\'\]]+$', '', s)
     return s
-
 
 def extract_number(val):
     if pd.isna(val) or str(val).strip() == "" or str(val).lower() == "n/a":
@@ -105,9 +90,6 @@ def extract_images(raw_data):
         r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-f_A-F][0-9a-f_A-F]))+',
         str(raw_data)
     )
-
-
-# ====================== ROUTES ======================
 
 @app.get("/health")
 def health():
@@ -210,8 +192,8 @@ def explain(input: PropertyInput):
     print(f"📊 Received explain request: {input.dict()}")
     input_dict = input.dict()
 
-    # ── Step 1: Build base DataFrame with all required fields ──
-    input_df = pd.DataFrame([{
+    # Build features dict for predict_and_explain
+    features = {
         "bedrooms":                input_dict["bedrooms"],
         "bathrooms":               input_dict["bathrooms"],
         "receptions":              input_dict["receptions"],
@@ -221,49 +203,20 @@ def explain(input: PropertyInput):
         "price_per_sqft":          input_dict["price_per_sqft"],
         "postcode_area":           input_dict.get("postcode_area", ""),
         "property_type_clean":     input_dict.get("property_type_clean", ""),
-    }])
-
-    # ── Step 2: One-hot encode (NO drop_first) ──
-    input_df = pd.get_dummies(
-        input_df,
-        columns=["postcode_area", "property_type_clean"],
-        drop_first=False
-    )
-    
-    print(f"🔍 Columns after one-hot: {input_df.columns.tolist()}")
-
-    # ── Step 3: Align columns — add missing dummies as 0, drop extras ──
-    for col in feature_cols:
-        if col not in input_df.columns:
-            input_df[col] = 0
-    input_df = input_df[feature_cols]
-    
-    # Debug active location
-    for col in feature_cols:
-        if col.startswith('postcode_area_') and input_df[col].iloc[0] == 1:
-            print(f"✅ Active location: {col}")
-
-    # ── Step 4: Predict ──
-    pred_log  = model.predict(input_df)[0]
-    predicted = float(np.expm1(pred_log))
-    
-    print(f"💰 Predicted price: £{predicted:,.0f}")
-
-    # ── Step 5: SHAP explanations ──
-    explainer   = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_df)
-    base_price  = float(np.expm1(explainer.expected_value))
-
-    shap_breakdown = {
-        col: float(np.expm1(abs(float(sv))) * np.sign(float(sv)))
-        for col, sv in zip(feature_cols, shap_values[0])
     }
+    
+    # Use the centralized predict_and_explain function
+    result = predict_and_explain(features)
+    
+    print(f"💰 Predicted price: £{result['predicted_price']:,.0f}")
 
     return {
-        "predicted_price": predicted,
-        "base_price":       base_price,
-        "shap_breakdown":   shap_breakdown,
-        "explanation":      f"The model predicts £{predicted:,.0f} for this property based on {len([v for v in shap_breakdown.values() if v != 0])} active features."
+        "predicted_price":    result["predicted_price"],
+        "base_price":         result["base_price"],
+        "shap_breakdown":     result["shap_breakdown"],
+        "explanation":        result["explanation"],
+        "feature_bullets":    result.get("feature_bullets", []),
+        "valuation_summary":  result.get("valuation_summary", ""),
     }
 @app.get("/api/property/{uprn}")
 def get_property(uprn: str):
@@ -292,8 +245,6 @@ def get_property(uprn: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ====================== FRONTEND SERVING ======================
 @app.get("/")
 async def serve_index():
     dist_path = os.path.join(os.path.dirname(__file__), 'dist')

@@ -4,106 +4,7 @@ import {
   ChevronDown, TrendingUp, TrendingDown, Minus,
   BrainCircuit, AlertCircle, Home
 } from 'lucide-react';
-
-const VALID_LOCATIONS = [
-  'S', 'B', 'O', 'R', 'C', 'M', 'E', 'F', 'T', 'W', 'D', 'J', 'Y', 'G', 'Q',
-  'H', 'A', 'L', 'P', 'I', 'V', 'K', 'N', 'U'
-];
-
-// Map city names to postcode letters
-const cityToPostcodeMap = {
-  'london': 'L', 'manchester': 'M', 'birmingham': 'B', 'liverpool': 'L',
-  'leeds': 'L', 'sheffield': 'S', 'bristol': 'B', 'newcastle': 'N',
-  'nottingham': 'N', 'leicester': 'L', 'coventry': 'C', 'bradford': 'B',
-  'cardiff': 'C', 'edinburgh': 'E', 'glasgow': 'G', 'aberdeen': 'A',
-  'belfast': 'B', 'southampton': 'S', 'portsmouth': 'P', 'oxford': 'O',
-  'cambridge': 'C', 'york': 'Y', 'brighton': 'B', 'exeter': 'E',
-  'norwich': 'N', 'derby': 'D', 'wolverhampton': 'W', 'plymouth': 'P',
-  'reading': 'R'
-};
-
-const getPostcodeLetter = (input) => {
-  const trimmed = input?.trim().toUpperCase() || '';
-  if (!trimmed) return '';
-  
-  // Check if it's a single letter (S, M, B, etc.)
-  if (VALID_LOCATIONS.includes(trimmed)) return trimmed;
-  
-  // Check if it's a postcode like M1, SW1, B1 - extract first letter
-  const match = trimmed.match(/^([A-Z])/);
-  if (match) return match[1];
-  
-  // Check if it's a city name
-  const cityMatch = cityToPostcodeMap[trimmed.toLowerCase()];
-  if (cityMatch) return cityMatch;
-  
-  return '';
-};
-
-const buildPayload = (form, propertyData) => {
-  if (propertyData) {
-    return {
-      bedrooms: parseFloat(propertyData.bedrooms) || 2,
-      bathrooms: parseFloat(propertyData.bathrooms) || 1,
-      receptions: parseFloat(propertyData.receptions) || 1,
-      property_size: parseFloat(propertyData.property_size) || 800,
-      time_remaining_on_lease: parseFloat(propertyData.time_remaining_on_lease) || 150,
-      service_charge: parseFloat(propertyData.service_charge) || 3000,
-      price_per_sqft: (parseFloat(propertyData.price_num) || 0) / (parseFloat(propertyData.property_size) || 800) || 1000,
-      postcode_area: getPostcodeLetter(propertyData.address),
-      property_type_clean: (propertyData.property_type || '').toLowerCase().trim(),
-    };
-  }
-  
-  return {
-    bedrooms: Math.min(10, Math.max(0, parseFloat(form.bedrooms) || 2)),
-    bathrooms: Math.min(8, Math.max(0, parseFloat(form.bathrooms) || 1)),
-    receptions: Math.min(6, Math.max(0, parseFloat(form.receptions) || 1)),
-    property_size: Math.min(10000, Math.max(200, parseFloat(form.property_size) || 800)),
-    time_remaining_on_lease: Math.min(999, Math.max(0, parseFloat(form.time_remaining_on_lease) || 150)),
-    service_charge: Math.min(20000, Math.max(0, parseFloat(form.service_charge) || 3000)),
-    price_per_sqft: Math.min(5000, Math.max(500, parseFloat(form.price_per_size) || 1000)),
-    postcode_area: getPostcodeLetter(form.area),
-    property_type_clean: form.property_type?.toLowerCase().trim() || '',
-  };
-};
-
-const formatPrice = (price) => {
-  return `£${Math.round(price).toLocaleString()}`;
-};
-
-const generateHumanExplanation = (predictedPrice, propertyData) => {
-  const askingPrice = propertyData?.price_num || 0;
-  const priceDiff = predictedPrice - askingPrice;
-  const diffPercent = askingPrice > 0 ? ((priceDiff / askingPrice) * 100).toFixed(1) : 0;
-  const threshold = 0.05;
-  
-  let priceAssessment = '';
-  if (Math.abs(priceDiff) < askingPrice * threshold) {
-    priceAssessment = `Our model values this property at ${formatPrice(predictedPrice)}, which aligns closely with the asking price of ${formatPrice(askingPrice)}.`;
-  } else if (priceDiff > 0) {
-    priceAssessment = `Our model estimates ${formatPrice(predictedPrice)} is ${diffPercent}% above the asking price of ${formatPrice(askingPrice)}. This suggests the property may be priced below market value, but verify comparable sales.`;
-  } else {
-    priceAssessment = `Our analysis suggests ${formatPrice(predictedPrice)} is ${Math.abs(diffPercent)}% below the asking price of ${formatPrice(askingPrice)}. The property appears overvalued relative to our model. Consider negotiation or further due diligence.`;
-  }
-  
-  const epc = propertyData?.ecp_rating || 'C';
-  const epcAssessment = ['A', 'B', 'C'].includes(epc)
-    ? `The ${epc} energy rating is strong for this property.`
-    : `The ${epc} energy rating may require future improvements, potentially affecting value.`;
-  
-  const tenure = propertyData?.tenure || 'Leasehold';
-  const tenureAssessment = tenure.toLowerCase().includes('freehold')
-    ? `Freehold ownership provides full control with no ground rent.`
-    : `As leasehold, be mindful of ground rents and service charges.`;
-  
-  const isGoodDeal = priceDiff > askingPrice * threshold && ['A', 'B', 'C'].includes(epc);
-  const recommendation = isGoodDeal
-    ? `Property appears undervalued relative to model. Consider accelerated acquisition.`
-    : `Proceed with standard due diligence. Price aligns with model expectations.`;
-
-  return { summary: priceAssessment, energyInsight: epcAssessment, tenureInsight: tenureAssessment, recommendation, predictedPrice, askingPrice };
-};
+import { buildPayload, getPostcodePrefix, VALID_POSTCODE_PREFIXES, formatPrice, generateHumanExplanation } from '../utils/predictionPayload';
 
 const HumanExplanation = ({ explanation }) => (
   <div className="space-y-4">
@@ -116,9 +17,22 @@ const HumanExplanation = ({ explanation }) => (
       </div>
     </div>
     <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-      <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Valuation Analysis</p>
-      <p className="text-[13px] text-slate-700">{explanation.summary}</p>
+      <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Valuation Summary</p>
+      <p className="text-[13px] text-slate-700 leading-relaxed">{explanation.summary}</p>
     </div>
+    {explanation.featureBullets && explanation.featureBullets.length > 0 && (
+      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <p className="text-[10px] font-bold text-slate-600 uppercase mb-2">Feature Contributions</p>
+        <ul className="space-y-1.5">
+          {explanation.featureBullets.map((bullet, idx) => (
+            <li key={idx} className="text-[12px] text-slate-700 flex items-start gap-2">
+              <span className="text-slate-400 mt-0.5">•</span>
+              <span>{bullet}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
     <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
       <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Energy Efficiency</p>
       <p className="text-[13px] text-slate-700">{explanation.energyInsight}</p>
@@ -156,7 +70,7 @@ const PredictModal = ({ isOpen, onClose, propertyData, simpleMode = false }) => 
 
   const validateInputs = () => {
     const location = form.area.trim();
-    const postcodeLetter = getPostcodeLetter(location);
+    const postcodeLetter = getPostcodePrefix(location);
     
     if (!location || !postcodeLetter) {
       setErrorMsg('Please enter a valid UK location (e.g., London, Manchester, M, B)');
@@ -190,7 +104,7 @@ const PredictModal = ({ isOpen, onClose, propertyData, simpleMode = false }) => 
       const data = await response.json();
       setResult(data);
       if (simpleMode && propertyData) {
-        setHumanExplanation(generateHumanExplanation(data.predicted_price, propertyData));
+        setHumanExplanation(generateHumanExplanation(data.predicted_price, propertyData, data));
       }
       setStep(3);
     } catch (err) {
@@ -332,17 +246,24 @@ const PredictModal = ({ isOpen, onClose, propertyData, simpleMode = false }) => 
               </div>
               <div className="space-y-3">
                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Valuation Analysis</p>
-                  <p className="text-[13px] text-slate-700">Based on the features provided, the model predicts <strong>{formatPrice(result.predicted_price)}</strong>. This is {result.predicted_price > 500000 ? 'above' : 'below'} the market baseline of {formatPrice(result.base_price)}.</p>
+                  <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Valuation Summary</p>
+                  <p className="text-[13px] text-slate-700 leading-relaxed">{result.valuation_summary || `Based on the features provided, the model predicts ${formatPrice(result.predicted_price)}. This is ${result.predicted_price > result.base_price ? 'above' : 'below'} the market baseline of ${formatPrice(result.base_price)}.`}</p>
                 </div>
                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Key Drivers</p>
-                  <p className="text-[13px] text-slate-700">The valuation is primarily influenced by property size, location, and bedroom count.</p>
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Feature Contributions</p>
+                  {result.feature_bullets && result.feature_bullets.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {result.feature_bullets.map((bullet, idx) => (
+                        <li key={idx} className="text-[12px] text-slate-700 flex items-start gap-2">
+                          <span className="text-emerald-500 mt-0.5">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[13px] text-slate-700">The valuation is influenced by property size, location, and bedroom count.</p>
+                  )}
                 </div>
-              </div>
-              <div className="p-5 bg-indigo-50 rounded-2xl">
-                <p className="text-[10px] font-bold text-indigo-500">Model Explanation</p>
-                <p className="text-[13px] text-slate-600">{result.explanation}</p>
               </div>
               <div className="flex gap-3"><button onClick={() => setStep(1)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold">New Prediction</button><button onClick={onClose} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">Done</button></div>
             </div>

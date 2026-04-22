@@ -7,6 +7,7 @@ import {
   TrendingUp, Building2, BrainCircuit
 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { buildPayload, formatPrice, generateHumanExplanation } from '../utils/predictionPayload';
 
 const Skeleton = ({ className }) => (
   <div className={`animate-pulse bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-2xl ${className}`} />
@@ -17,48 +18,11 @@ const formatValue = (value, fallback = 'N/A') => {
   return String(value).trim();
 };
 
-// Format price without decimals
-const formatPrice = (price) => {
-  if (!price && price !== 0) return 'N/A';
-  return `£${Math.round(price).toLocaleString()}`;
-};
-
 // Format current valuation string (removes .00)
 const formatCurrentPrice = (priceStr) => {
   if (!priceStr) return 'Contact for Quote';
   const cleaned = String(priceStr).replace(/\.00$/, '').replace(/\.00(?=\D|$)/, '');
   return cleaned;
-};
-
-const generateHumanExplanation = (predictedPrice, propertyData) => {
-  const askingPrice = propertyData?.price_num || 0;
-  const priceDiff = predictedPrice - askingPrice;
-  const diffPercent = askingPrice > 0 ? ((priceDiff / askingPrice) * 100).toFixed(1) : 0;
-  const threshold = 0.05;
-  
-  let priceAssessment = '';
-  if (Math.abs(priceDiff) < askingPrice * threshold) {
-    priceAssessment = `Our model values this property at ${formatPrice(predictedPrice)}, which aligns closely with the asking price of ${formatPrice(askingPrice)}.`;
-  } else if (priceDiff > 0) {
-    priceAssessment = `Our model estimates ${formatPrice(predictedPrice)} is ${diffPercent}% above the asking price of ${formatPrice(askingPrice)}. This suggests the property may be priced below market value, but verify comparable sales.`;  } else {
-    priceAssessment = `Our analysis suggests ${formatPrice(predictedPrice)} is ${Math.abs(diffPercent)}% below the asking price of ${formatPrice(askingPrice)}. The property appears overvalued relative to our model. Consider negotiation or further due diligence.`;  }
-  
-  const epc = propertyData?.ecp_rating || 'C';
-  const epcAssessment = ['A', 'B', 'C'].includes(epc)
-    ? `The ${epc} energy rating is strong for this property.`
-    : `The ${epc} energy rating may require future improvements.`;
-  
-  const tenure = propertyData?.tenure || 'Leasehold';
-  const tenureAssessment = tenure.toLowerCase().includes('freehold')
-    ? `Freehold ownership provides full control with no ground rent.`
-    : `As leasehold, be mindful of ground rents and service charges.`;
-  
-  const isGoodDeal = priceDiff > askingPrice * threshold && ['A', 'B', 'C'].includes(epc);
-  const recommendation = isGoodDeal
-    ? `Property appears undervalued. Consider accelerated acquisition.`
-    : `Proceed with standard due diligence. Price aligns with model expectations.`;
-  
-  return { summary: priceAssessment, energyInsight: epcAssessment, tenureInsight: tenureAssessment, recommendation };
 };
 
 const PropertyDetail = () => {
@@ -90,17 +54,7 @@ const PropertyDetail = () => {
           // Now fetch prediction
           setPredictionLoading(true);
           try {
-            const payload = {
-              bedrooms: parseFloat(selected.bedrooms) || 2,
-              bathrooms: parseFloat(selected.bathrooms) || 1,
-              receptions: parseFloat(selected.receptions) || 1,
-              property_size: parseFloat(selected.property_size) || 800,
-              time_remaining_on_lease: parseFloat(selected.time_remaining_on_lease) || 150,
-              service_charge: parseFloat(selected.service_charge) || 3000,
-              price_per_sqft: (parseFloat(selected.price_num) || 0) / (parseFloat(selected.property_size) || 800) || 1000,
-              postcode_area: (selected.address || '').toUpperCase().match(/([A-Z]{1,2}\d{0,2})/)?.[1] || '',
-              property_type_clean: (selected.property_type || '').toLowerCase().trim(),
-            };
+            const payload = buildPayload(null, selected);
             const predResponse = await fetch(`${base_url.replace(/\/$/, '')}/explain`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -110,7 +64,7 @@ const PropertyDetail = () => {
               const predData = await predResponse.json();
               if (isMounted) {
                 setPrediction(predData);
-                setHumanExplanation(generateHumanExplanation(predData.predicted_price, selected));
+                setHumanExplanation(generateHumanExplanation(predData.predicted_price, selected, predData));
               }
             }
           } catch (err) {
@@ -326,16 +280,32 @@ const PropertyDetail = () => {
           {/* Left: description + map */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Full 4-Part Human Explanation - stable, no blinking */}
+            {/* Full Human Explanation with Feature Contributions */}
             {humanExplanation && !predictionLoading && (
               <div className="space-y-2">
                 <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-sm">📊</span>
-                    <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Valuation Analysis</p>
+                    <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Valuation Summary</p>
                   </div>
                   <p className="text-[12px] text-slate-700 leading-tight">{humanExplanation.summary}</p>
                 </div>
+                {humanExplanation.featureBullets && humanExplanation.featureBullets.length > 0 && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-sm">🔍</span>
+                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Feature Contributions</p>
+                    </div>
+                    <ul className="space-y-1">
+                      {humanExplanation.featureBullets.map((bullet, idx) => (
+                        <li key={idx} className="text-[11px] text-slate-700 flex items-start gap-1.5">
+                          <span className="text-slate-400 mt-0.5">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-sm">⚡</span>
