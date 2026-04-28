@@ -1,0 +1,85 @@
+\chapter{Background Research}\label{ch:Background}
+
+Residential property appraisal has historically been grounded in a limited set of established methodologies, within which the determination of value and its accompanying justification were produced in a single act with a single result. The artefact that generated the valuation (whether an appraiser's written commentary, a grid of adjustments applied to comparable transactions, or a regression coefficient) simultaneously constituted the evidentiary basis for that valuation \parencite{Pagourtzi2003}.
+
+This relationship between method and explanation becomes especially important when we consider what happens if traditional human appraisers are replaced by predictive models that generate a single output value, creating a loss of trust and reliability in the prediction value \parencite{Pagourtzi2003}.
+
+In the sales comparison approach, for example, the value of a property is estimated by looking at recent sales of similar properties, then manually adjusted for differences that differ between the properties (e.g. size, condition, and location) \parencite{Pagourtzi2003}
+
+What makes this approach transparent is the appraiser's written report. Every comparable property chosen is explained, and every adjustment is justified in plain language, meaning anyone reading the report can follow the logic from start to finish. However, these judgments are ultimately subjective and cannot be fully standardised.
+
+As a result, two appraisers looking at the same property may reach different conclusions, and the method has faced ongoing academic criticism for lacking objectivity and consistency \parencite{Pagourtzi2003}.
+
+To address the issue, the \textbf{hedonic pricing model} emerged as a statistical formalisation of the comparative approach and represents the earliest systematic attempt to produce a per-feature explanation of residential property prices. Building on the theoretical foundation of \textcite{Rosen1974}, hedonic models decompose a property into its structural, locational, and environmental characteristics and use multiple linear regressions to estimate the marginal contribution of each attribute to the overall price. Due to these factors, hedonic models became dominant in mass appraisals because of their explanatory transparency: each regression coefficient carries a direct economic interpretation, and the contribution of every feature to the predicted value can be stated numerically and in human-readable terms \parencite{Wing2003}.
+
+In this sense, hedonic regression is the direct conceptual ancestor of the feature-attribution approach, which was later pursued in XAI \parencite{Iban2022}. 
+
+However, hedonic models rest on the assumption that the relationship between property attributes and price is linear and additive, an assumption that has been repeatedly shown to be violated in real housing markets, where interactions between location, amenities, and structural characteristics are inherently non-linear \parencite{Wing2003}.
+
+The methods that were explainable by construction could not capture the true complexity of the market, while the methods capable of capturing that complexity would, by their nature, sacrifice the interpretability on which traditional valuation has always relied \parencite{Lorenz2023}.
+
+
+\section{General Benefits of Property Valuation Explanation}
+\label{se:GeneralBenfits}
+
+One of the primary advantages of explaining a property's value is \textbf{fostering user trust when using ML models}.
+
+\textcite{Ribeiro2016} demonstrates that users show a significantly greater likelihood to accept and act upon a model's output when the prediction is accompanied by a human-interpretable rationale rather than presented as a raw score; and this consideration carries particular weight in the real estate domain, where valuations inform long-term investments and purchase decisions. The costs of misplaced confidence are correspondingly high. For example, when the reasoning is made explicit, such as how a larger floor area or good public transport proximity increases the value of the property, while poor property condition decreases it, users can assess whether the valuation makes sense based on their knowledge about the market. Thus, \textbf{users are not simply forced to accept a score to base their judgement on, but can evaluate the process and the factors that influenced the decision of the model}.
+
+Furthermore, articulating property valuation has educational benefits. As users are exposed to the attributes that shape a given estimate and the magnitudes of their respective contributions, they progressively acquire a more sophisticated understanding of the market in which they consider participating. This is of particular consequence for first-time home-buyers, who typically lack the experiential grounding required to assess whether a given property is fairly priced and report corresponding uncertainty in their decision-making \parencite{Reid2013}. 
+
+In this context, explanation serves not only to \textbf{legitimise individual valuations} but also to \textbf{cultivate the user's evaluative competence} over time. By making the reasoning behind each estimate visible, an explainability platform moves away from presenting itself as an infallible authority on property values. Instead, it offers an informed prediction; one the user can question, weigh against their own knowledge, and use as a starting point for deeper understanding.
+
+In this way, explainability converts what would otherwise be a silent output, a single figure, delivered without elaboration, into an instructive resource that accompanies the user throughout the decision.
+
+
+\section{Use of Property Valuation Explanation}
+
+The precise evaluation of the values of residential properties is crucial for a wide array of financial decisions made by both institutional entities and individual investors. \textcite{Gray2021}  highlight that \textbf{a substantial portion of global wealth is vested in real estate}, with significant financing contingent upon the accuracy of property valuations.
+
+This positions properties as a fundamental component of the financial system.
+In the lending sector, property valuations are used by banks and building societies to ascertain the loan-to-value ratio, thereby influencing the associated risk and interest rate of mortgages \parencite{Gan2008}. For individual investors, the perceived value of a property directly affects the cost and availability of the necessary financing for acquisition, rendering valuation reasoning a matter of immediate practical significance rather than a professional concern.
+For small-scale and individual investors, property values guide decisions related to acquisition, disposal, and long-term wealth accumulation. 
+
+\textcite{Johnson2024} assert that valuation outputs are essential not only for pricing individual assets but also for securing lending, indicating that the quality of valuation directly impacts an investor's market entry and sustainability. In this context, demystifying the rationale behind the value of a property, rather than simply reporting a figure, allows users to evaluate the underlying assumptions regarding rental yield, growth potential, and location risk \parencite{Gabrielli2021}. 
+
+This examination is particularly vital for non-professional investors, who typically lack access to qualified surveyors and proprietary data sources available to institutional participants, and must therefore rely on publicly accessible information to assess opportunities.
+As a result, an explainable valuation holds practical significance for individual households and small-scale investors, who depend on interpretable evidence to make financially significant decisions, often representing their largest financial commitments \parencite{Rinaudo2025}.
+
+
+\section{Machine Learning in Property Valuation Explanation
+\label{se:MLBackground}}
+
+The uptake of ML in property valuation has grown substantially alongside the availability of larger and geo-referenced housing datasets \parencite{Kang2021}. Large \textbf{datasets enable ML algorithms to capture non-linear relationships} that are typically difficult to estimate using traditional hedonic price models \parencite{Ho2020}.
+
+The results from the literature show that ensemble models, specifically Random Forest (RF) and Gradient Boosting, outperform Linear Regression and Support Vector Machines in standard error metrics, including Mean Squared Error (MSE), Root Mean Squared Error (RMSE), and Mean Absolute Percentage Error (MAPE). Tree-based algorithms also exceeded the predictive accuracy of other models in the South Korean housing market  \parencite{Hong2020}. 
+
+\textcite{Rico-Juan2021} found similar results when they used ML models to outperform spatial hedonic models in predicting asking prices in Alicante, Spain. However, these gains in predictive performance are typically offset by a loss of interpretability; a limitation widely termed the ``black-box'' problem. The concern is severe in settings where transparency is a prerequisite rather than a convenience, including property taxation, mortgage lending, and mass appraisal. 
+
+In response, a growing body of work has turned to XAI techniques, SHAP and Permutation Feature Importance (PFI) foremost among them, to quantify how individual property attributes contribute to predicted values. A study carried out by \textcite{Kim2025} demonstrates that SHAP enables both global and local explanations of non-linear effects, revealing threshold behaviours that hedonic regressions cannot capture.
+
+Furthermore, the opacity of complex predictive models has driven growing interest in XAI, broadly defined as the set of processes that allow stakeholders to understand how an AI system arrives at its predictions and decisions. Within the information systems literature, XAI has been positioned as a critical enabler of AI-driven Decision Support Systems (DSS) \parencite{Giudice2019}, where the output of the model alone is insufficient; the reasoning behind it must also be interpretable for the system to support informed decision-making \parencite{Meske2022}. 
+
+This is particularly pertinent in residential property valuation, where the transition from transparent hedonic regression models to high-capacity ensemble methods introduced a fundamental trade-off between predictive accuracy and interpretability \parencite{Gunes2024}.
+
+\section{Summary}
+
+This review of the literature aims to summarise current research on factors influencing house prices. This field of study has recently expanded to utilise ML techniques to predict and explain housing prices. 
+
+Hedonic regression, formulated by \textcite{Rosen1974}, has been the foundation of modern real estate appraisal, valuing properties based on implicit prices of structural, location, and neighbourhood characteristics, owing to its interpretability advantage \parencite{Wing2003}. 
+
+However, it has been shown that these assumptions of parametric models are no longer valid due to dynamic housing markets \parencite{An2025} and human bias, as manual appraisal lacks consistency between valuers \parencite{Aluko2007}. 
+
+However, it has been shown that the linearity and additivity assumptions underpinning parametric models are inadequate for capturing the dynamic and nonlinear behaviour of modern housing markets \parencite{An2025}, whilst manual appraisal is itself constrained by human bias and a well-documented lack of consistency between appraisers.
+
+The solution has been for academics to apply ML algorithms to property data and find that ensemble methods such as FR and Gradient Boosting outperform regression on the predictive accuracy benchmark \parencite{eh2018};. 
+
+The explainability of property value has large real-world applications, from enabling mortgage loans to assisting in taxation, investment, and city planning \parencite{Iban2022}. Therefore, accuracy is not enough, and regulators and end-users demand interpretable models \parencite{Lorenz2023}. 
+
+This has been an issue of ML models labelled as the ``black-box'' problem \parencite{Adadi2018}, and efforts have been made to utilise XAI techniques, including SHAP and Local Interpretable Model-Agnostic Explanations (LIME), in the housing domain \parencite{Lundberg2017} \parencite{Ribeiro2016}.
+
+Recent studies by \textcite{Rico-Juan2021} and \textcite{Iban2022}, have shown that SHAP can recover the directional and quantitative effects of hedonic variables from a RF or XGBoost model, offering a credible compromise between accuracy and explainability. Given this evidence, it is reasonable to assert that an ML-based valuation tool should be complemented by a model-agnostic explanation layer, providing users with a predicted price and a justification grounded in the specific characteristics of the property. 
+
+However, existing research has predominantly focused on data from markets such as Hong Kong \parencite{Ho2020}, Korea \parencite{Kim2025}, Spain \parencite{Rico-Juan2021} and Turkey \parencite{Iban2022}, and has concentrated on producing academic analyses rather than end-user-facing tools. Relatively little research has explored how these explanations should be presented to non-expert buyers and sellers in practical applications \parencite{Bauer2023}. 
+
+Thus, this literature review offers valuable insight into both the \textbf{technical maturity of explainable property valuation and the relative lack of user-orientated implementations}, which together justify the direction taken in this project.

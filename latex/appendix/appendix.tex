@@ -1,0 +1,146 @@
+\chapter{Project Specification}
+\label{ch:Specifications}
+
+The following requirements have been defined to guide the development and implementation of the ML model for the PropertyIQ web application.
+
+\section{Functional Requirements}
+
+\begin{enumerate}
+    
+    \item Must take in a dataset of real residential property listings and convert it into a format that a supervised ML pipeline can work with, given the inconsistent and ``string'' nature of fields typically found in scraped listings.
+    
+    \item Must clean the input data so that malformed entries, inconsistent encodings, or missing values do not corrupt the training process or distort the model's learning behaviour.
+    
+    \item Must split the prepared data into separate training and evaluation subsets, in line with standard practice for supervised regression tasks, so that the reported performance reflects how the model generalises rather than how well it memorises the data.
+    
+    \item Must train a regression model that learns to map a set of property features to a continuous estimate of monetary value; Random Forest and XGBoost are perfect candidates as highlighted in Section \ref{se:MLBackground} \nameref{se:MLBackground}.
+
+    \item Must return a valuation for any valid feature vector given at inference time, with the output expressed in the same currency units as the training data.
+
+    \item Should encode categorical attributes, such as those describing location and property type, in a way that preserves their meaning whilst remaining usable by the chosen learning algorithm.
+
+    \item Should report its predictive performance on held-out data using regression metrics that convey both relative and absolute error, so that the quality of the model can be judged on more than a single figure.
+
+    \item Could go beyond the attributes directly available in the source data by deriving additional features from unstructured or semi-structured fields, where these can be shown to add value.
+
+\end{enumerate}
+
+
+\section{Non-Functional Requirements}
+
+\begin{enumerate}
+
+    \item Must reach a level of predictive performance in line with what has been reported for current machine-learning approaches to property valuation, so that its output can reasonably be used to inform user decisions rather than serve only as a rough indication.
+
+    \item Must lend itself to post-hoc explanation through feature-attribution techniques, in keeping with the transparency arguments set out in the literature review, so that the second stage of PropertyIQ can break each prediction down into the contributions of its individual inputs.
+
+    \item Must return equivalent results across repeated runs on the same inputs, both to support academic verification and to meet the reliability expectations of an application intended for real use.
+
+    \item Should be usable by the wider PropertyIQ web application through a clearly defined interface, independently of the notebook in which it is developed, so that the research artefact can move into a deployable form without structural rework.
+
+    \item The pipeline should be broken into distinct stages with clear boundaries between them, which allows any one part to be adjusted, swapped out, or expanded without pulling the rest of the pipeline apart.
+
+    \item Could respond in a controlled and predictable way when faced with incomplete or unexpected input, rather than producing silent failures or valuations that make no sense given the circumstances.
+    
+\end{enumerate}
+
+
+\chapter{Project Log}
+\label{ProjectLog}
+
+The following is a weekly summary of the work carried out during the development of the ML model and PropertyIQ web application. It covers tasks that were completed, tutorials that were worked through, articles that were read, and reviews of discussions / meetings held with the project supervisor and other third parties. 
+
+\section*{Week One: Thursday 12/02/2026}
+Initial meeting with this project supervisor, scoped the problem space around property analytics and machine learning. 
+\begin{itemize}
+  \item Discussed several candidate project directions, with an emerging focus on transparency in property valuation tools and DSS \parencite{Giudice2019}.
+  \item Identified the ``black-box'' problem in current property platforms as a meaningful gap worth addressing.
+\end{itemize}
+
+\section*{Week Two: Thursday 19/02/2026}
+Focused on shaping the project's academic grounding through early literature review work.
+\begin{itemize}
+    \item Reviewed foundational appraisal literature, including \textcite{Rosen1974} \textcite{Pagourtzi2003}, to understand the evolution from sales comparison through to hedonic regression.
+    \item Identified the tension between interpretability (hedonic regression models) and predictive accuracy (ensemble ML models) as a central theme of this project.
+\end{itemize}
+
+\section*{Week Three: Thursday 26/02/2026}
+Continued literature review with a shift towards Machine Learning and XAI.
+\begin{itemize}
+    \item Reviewed \textcite{Ho2020} \textcite{Rico-Juan2021} \textcite{Kim2025} on ensemble methods outperforming regression in property valuation.
+    \item \textcite{Ribeiro2016} on LIME and \textcite{Lundberg2017} on SHAP, which reinforced the decision to pair a predictive model with a dedicated explanation layer.
+    \item Started drafting Section \ref{ch:Background} \nameref{ch:Background}.
+\end{itemize}
+
+\section*{Week Four: Thursday 05/03/2026}
+Continued literature review alongside early design and system architecture work.
+\begin{itemize}
+    \item Began sketching the overall system architecture: separate ML workspace, backend API, and React frontend.
+\end{itemize}
+
+\section*{Week Five: Thursday 12/03/2026}
+Finalised design and system architecture, refined the toolchain.
+\begin{itemize}
+    \item Confirmed the \textbf{initial} tech stack: Python (Pandas and NumPy) for data handling, Fast API for the backend, and React with frontend with interactive visualisations.
+    \item Drafted Section \ref{ch:Design} \nameref{ch:Design} chapter, including the rationale for modular separation between presentation and data logic.
+    \item Defined the functional and non-functional requirements that later formed Appendix \ref{ch:Specifications} \nameref{ch:Specifications}.
+\end{itemize}
+
+\section*{Week Six: Thursday 19/03/2026}
+Literature review nearly completed and transitioned into the data preprocessing phase.
+\begin{itemize}
+    \item Sourced the dataset used for the project: a scraped Zoopla export of 1,000 UK residential listings with 43 raw attributes.
+    \item Imported the CSV into Pandas and ran an initial inspection, identifying irrelevant columns (URLs, image links) and sparsely populated fields (virtual tours, deposits, letting arrangements).
+    \item Began drafting content for the final report in \LaTeX.
+\end{itemize}
+
+\section*{Week Seven: Thursday 26/03/2026}
+Poster submission week.
+\begin{itemize}
+    \item Finalised and submitted the academic poster for PropertyIQ.
+    \newline \textbf{\textit{Note}}: the poster represented an earlier iteration of the project and referenced Random Forest (0.89), Django, etc. The technical direction was revised afterwards, and the final system differs significantly from what was presented at the poster.
+\end{itemize}
+
+\section*{Week Eight: Thursday 02/04/2026}
+Implementation began in earnest, starting with a pivot in the technical approach.
+\begin{itemize}
+    \item Pivoted from Random Forest to XGBoost, selected for its stronger compatibility with SHAP's TreeExplainer and its proven performance on structured tabular data.
+    \item Pivoted from Django to FastAPI served via uvicorn, a lighter-weight choice better suited to the scope of serving predictions and explanations.
+    \item Completed the data cleaning pipeline: regex-based stripping of currency symbols from price, normalising service charge, extracting numerical property size, and encoding property type.
+    \item Dropped records missing critical fields (price, size), reducing the working dataset from 1,000 to 977 records.
+\end{itemize}
+
+\section*{Week Nine: Thursday 09/04/2026}
+Core ML pipeline built and validated.
+\begin{itemize}
+    \item Implemented feature engineering: \verb|price_per_sqft|, \verb|log_price| (via \verb|numpy.log1p|), and one-hot encoded postcode area columns.
+    \item Trained the final XGBRegressor, achieving an $R^{2}$ of 0.9557 on the held-out 20\% test partition.
+    \item Persisted the trained model and feature column list as \verb|.pkl| artefacts to cleanly decouple training from deployment.
+    \item Integrated \verb|shap.TreeExplainer| and wrote the \verb|predict_and_explain| function used in the web application, including the input-validation and feature-vector reconstruction logic required to match the training schema.
+\end{itemize}
+
+\section*{Week Ten: Thursday 16/04/2026}
+Backend, frontend, evaluation and final writeup.
+\begin{itemize}
+    \item Built the FastAPI backend (\verb|app.py|) with a \verb|PropertyInput| class working as a request schema and routes for \verb|/predict|, \verb|/explain|, \verb|/api/properties|, etc.
+    \item Developed the React frontend with React Router, Axios, Tailwind CSS, and Recharts, covering the dashboard, listings, analysis, property detail and system-explanation views.
+    \item Ran evaluation and testing: confirmed $R^{2}$ of 0.9557, MAE of \pounds56,451, and validated SHAP additivity, consistency, and directional credibility through controlled perturbation tests.
+    \item Completed the Chapter \ref{ch:Implementation} \nameref{ch:Implementation}, \ref{ch:Evaluation} \nameref{ch:Evaluation} and \ref{ch:Conclusion} \nameref{ch:Conclusion}
+\end{itemize}
+
+\section*{Week Eleven: Thursday 23/04/2026}
+Finished the project.
+\begin{itemize}
+    \item Formatted and completed \LaTeX report.
+    \item Added Appendix \ref{ProjectLog} \nameref{ProjectLog}.
+    \item Review and final upload of the project to the GitHub repository \parencite{Kirilov2026}.
+\end{itemize}
+
+\chapter{Source Code}
+\label{ch:SourceCode}
+
+The source code for this project; including the Jupyter Notebook model, Python files, and the React website, is available at the following link: \url{https://github.com/milenkirilov888/PropertyIQ}.
+
+
+
+

@@ -1,0 +1,57 @@
+\chapter{Design and Methodologies}\label{ch:Design}
+
+The PropertyIQ design is based on the belief that transparency and explainability are essential for developing reliable decision-support systems. 
+
+The web-based application directly addresses the identified limitations of existing property platform tools, which often present scores and rankings without revealing the underlying reasoning. 
+
+\textcite{Ribeiro2016} highlighted the importance of user-centric transparency, arguing that \textbf{decision-support tools are effective only when users can comprehend and trust their outputs}, thus, the PropertyIQ web application was designed to generate predictions and explain them. 
+
+Furthermore, following the approach advocated by \textcite{Lundberg2017}, PropertyIQ combines predictive modelling with interpretability. XGBoost \parencite{Chen2016} is used to generate property valuations, whereas SHAP \parencite{Lundberg2017} values decompose each prediction, attributing a quantified contribution to every input feature and presenting it in a human-understandable language.
+
+The modular system architecture is structured into two distinct layers: a JavaScript React \parencite{Meta2026} frontend, which is responsible for filtering and visualisation, and a Python Uvicorn \parencite{Trylesinski2026} backend, which handles data transformation and serves the processed property data through the Representational State Transfer (REST) API endpoints \parencite{Powell2025}.
+
+Although both layers are deployed from the same Uvicorn process, the clear separation between presentation logic and data processing logic enhances the readability and maintainability of the codebase.
+
+PropertyIQ implements a strategy of progressive disclosure of complexity, ensuring accessibility to non-expert investors by providing immediate and actionable insights by highlighting risk indicators, such as short remaining leaseholds, high EPC ratings, and council tax bands. This approach transforms raw data into an interpretable system, enabling users to \textbf{understand the rationale behind the valuation of properties derived from machine learning}.
+
+On a side note, the development of PropertyIQ reflects the three foundations of professionalism articulated by the British Computer Society \parencite{BSC2022}. \textbf{Socially}, the system reduces the informational inequality between professional intermediaries and ordinary market participants by offering transparent, explainable valuations to non-expert users, while being framed as a decision-support tool rather than a substitute for professional judgement. \textbf{Legally}, it complies with the UK GDPR \parencite{GDPR2016} and the Data Protection Act 2018 \parencite{DPA2018}: only legally obtained non-personal property data are used, and the explainability layer aligns with the interest of the data-subject in meaningful information on automated decision-making. \textbf{Ethically}, the project follows the BCS Code of Conduct: the model has been evaluated for predictive performance and potential socio-geographic bias, its limitations are communicated openly rather than concealed behind a single confident figure, and explainability exists so that users may exercise informed judgement rather than defer uncritically to the model.
+
+
+\section{Implementation Strategies}
+
+The implementation of PropertyIQ requires an iterative development process that involves the integration of machine learning pipelines into the web application.
+
+The initial phase focused on data exploration and preparation. The dataset, a Comma Separated Value (CSV) file, obtained by scraping Zoopla and containing 1,000 UK residential property listings with 43 attributes, was imported using the Pandas \parencite{Pandas2026} library. Feature engineering was used to extract investment-relevant signals from raw attributes, such as price, size, and EPC rating.
+
+The second phase focused on model development, where XGBoost was chosen due to its interpretability and ease to implement; while more advanced and complex algorithms such as neural networks may have yielded a more accurate prediction, which adds a level of complexity to this project without increasing the explanatory features \parencite{Sharma2024}.
+
+Thereafter, the trained XGBoost model was integrated  with SHAP to produce natural language explanations of how individual property features affected valuation of the price for the property; and this ML pipeline was developed before being integrated into the backend.
+
+Following the validation of the model, the third phase involved the integration of the ML pipeline into a Python backend, which was deployed using Uvicorn to provide RESTful API endpoints accessible via the React frontend, facilitated by Vite \parencite{VoidZeroInc2026}.
+
+
+\section{Development Tools}
+
+The following tools have been used throughout this project development and in order to create the two ML models (XGBoost and SHAP) and  develop the React web app of PropertyIQ.
+
+\begin{itemize}
+    \item PyCharm \parencite{JetBrains2026} served as the primary Integrated Development Environment (IDE), with extensions configured to support both Python and JavaScript React workflows.
+    
+    \item Jupyter Notebook \parencite{JupyterTeam2015} was adopted as the principal environment for model development, exploratory analysis, and validation prior to backend integration, due to its interactive execution model and native support for inline visualisation.
+    
+    \item XGBoost was selected for its well-documented performance on structured tabular data and its natural compatibility with SHAP, the explainability framework employed to derive feature-level contribution scores for individual property predictions.
+    
+    \item Uvicorn, was chosen for the backend implementation due to its minimal resource footprint and strong interoperability with the broader data science ecosystem.
+    
+    \item Pandas and Numpy were used for the ingestion and preprocessing of CSV dataset. Although there are more performant alternatives such as Polars \parencite{JodieBurchell2024}, the former libraries were preferred for their widespread adoption within the academic data science and machine learning community, thus improving the accessibility and reproducibility of the development process.
+    
+    \item React, which was scaffolded via Vite, was selected for its component-based architecture, which aligns with the modular design philosophy of the proposed system. Vite's hot-module replacement capability further accelerated the frontend development cycle.
+    
+    \item Tailwind CSS \parencite{TailwindLabs2021} was employed for utility-first styling, facilitating rapid interface development without requiring context-switching to separate stylesheet definitions.
+    
+    \item Recharts \parencite{recharts2026} was used for its Scalable Vector Graphics (SVG) based rendering engine and native React integration, allowing the visualisation of investment indicators and risk distributions throughout the data set.
+    
+\end{itemize}
+
+
+

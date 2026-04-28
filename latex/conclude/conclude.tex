@@ -1,0 +1,26 @@
+\chapter{Conclusion \& Future Work}
+\label{ch:Conclusion}
+
+The following sections present the conclusions drawn from PropertyIQ development and evaluation, alongside directions for future research. This section reflects on the extent to which the project objectives were met, and it identifies areas in which the system could be meaningfully extended.
+
+
+\section{Conclusion}
+\label{se:Conclusion}
+
+This project investigated the extent to which a property valuation system could be enhanced by integrating explanatory mechanisms with its predictions. The resulting prototype, PropertyIQ, combines a trained XGBoost valuation model, SHAP-based attribution, a Python backend, and a React frontend into a unified system capable of presenting property listings, generating valuations, and communicating the rationale underlying those valuations. In doing so, \textbf{this project advances beyond a conventional ``black-box'' approach towards a more transparent decision-support tool}.
+
+A principal finding of this project is that explainability yields practical value only when it is meaningfully integrated into a larger system. A model explanation is not inherently useful by virtue of its existence; it must be presented in a form that users can interpret in relation to the specific properties under consideration. Consequently, the frontend interface and clear interpretation view were of comparable importance to the machine learning model itself. The most significant outcome was therefore not the integration of SHAP with a valuation model in isolation, but the \textbf{capacity to embed that explanation within a coherent, user-facing workflow}.
+
+The project also demonstrated that effective property intelligence systems cannot be constructed using a singular reasoning approach. Within PropertyIQ, certain outputs were determined statistically via the XGBoost regression model, whilst others were addressed through the web application user interface. This combination made the system more interpretable and functional than a model-only implementation. In general, this project illustrates both the feasibility of an explainable property valuation and the considerable potential for further development within this domain.
+
+
+\section{Future Work}
+\label{se:FutureWork}
+
+An avenue for future development lies in \textbf{broadening the scale of the dataset and the range of features available to the model}. Although the project relied on genuine property listings, the dataset used for the modelling was limited in size and the variables contained were largely limited to those directly available from the scraped source. A logical extension would be to incorporate additional location and neighbourhood-level attributes, including accessibility to transport, local market demand indicators, school performance metrics, and crime statistics, provided that these can be sourced and matched to individual properties with reasonable reliability. Expanding the feature space in this manner would likely improve both the accuracy of the valuations and the contextual richness of the accompanying explanations.
+
+A further extension would involve the introduction of a dedicated user account system that would allow individuals to register, authenticate, and manage a portfolio of personal property within the platform. This would transition PropertyIQ from a tool supporting one-off valuations to a longitudinal decision-support system for prospective buyers and small-scale investors. This would substantially increase the practical utility of the platform by supporting both the evaluation of individual listings and the ongoing management of investment risk across a broader portfolio.
+
+Furthermore, a natural extension of PropertyIQ's existing risk intelligence capabilities would be the introduction of a proactive early warning system tailored to individual user portfolios. Rather than requiring users to manually inspect each asset, this feature would continuously monitor key indicators, such as shifts in local market valuations, deteriorating EPC ratings relative to upcoming regulatory thresholds, and lease term erosion; and automatically surface properties exhibiting signs of value decline. Using the existing XGBoost model alongside time-series trend analysis, the system could generate personalised alerts ranked by severity, enabling investors to act before depreciation becomes significant.
+
+Lastly, a valuable addition would be a dedicated property comparison interface, which would allow users to evaluate two or more listings against each other using a structured, side-by-side layout. This feature was suggested and considered during the user testing phase as described in Section \ref{su:SmallScaleInvestor} \nameref{su:SmallScaleInvestor}. Beyond raw listing attributes such as price, size, and EPC rating, the view would surface the model's SHAP-derived feature contributions for each property, making it immediately clear which asset offers stronger value drivers and which carries greater risk exposure. This would directly address the information asymmetry problem central to PropertyIQ's mission, giving investors an explainable, data-grounded basis for prioritising one acquisition over another without having to cross-reference multiple pages manually.
